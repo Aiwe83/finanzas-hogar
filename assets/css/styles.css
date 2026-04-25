@@ -1,0 +1,736 @@
+/* =============================================================================
+   Finanzas del Hogar — Dark Neon
+   -----------------------------------------------------------------------------
+   Tema oscuro neon coherente con el perfil GitHub. Tokens semánticos en :root,
+   sin frameworks. System font stack + tabular-nums para no romper el CSP de
+   netlify.toml (que no permite font-src externos).
+
+   Selectores clave que el JS toca: NO se renombran. Solo cambia la capa visual.
+   ============================================================================= */
+
+
+/* === Design tokens ====================================================== */
+:root {
+  /* Superficies (escala GitHub neon) */
+  --bg:        #0D1117;
+  --surface:   #161B22;
+  --surface-2: #1F2937;
+  --surface-3: #273449;
+  --border:    #30363D;
+  --border-strong: #4B5563;
+
+  /* Texto */
+  --text:   #E6EDF3;
+  --muted:  #9CA3AF;
+
+  /* Acentos neon */
+  --cyan:    #00F0FF;
+  --violet:  #7C3AED;
+  --magenta: #FF006E;
+  --yellow:  #F7DF1E;
+  --green:   #10B981;
+
+  /* Roles semánticos (mapean a neon) */
+  --accent:    var(--cyan);
+  --income:    var(--green);
+  --expense:   var(--magenta);
+  --balance:   var(--cyan);
+  --danger:    var(--magenta);
+  --warning:   var(--yellow);
+
+  /* Gradiente firma */
+  --grad-neon: linear-gradient(90deg, var(--cyan) 0%, var(--violet) 50%, var(--magenta) 100%);
+
+  /* Sombras / glow */
+  --glow-cyan:    0 0 14px rgba(0, 240, 255, 0.45);
+  --glow-magenta: 0 0 14px rgba(255, 0, 110, 0.45);
+  --glow-green:   0 0 14px rgba(16, 185, 129, 0.45);
+  --shadow-card:  0 1px 0 rgba(255,255,255,0.03), 0 8px 24px rgba(0,0,0,0.4);
+  --shadow-pop:   0 1px 0 rgba(255,255,255,0.05), 0 12px 40px rgba(0,0,0,0.55);
+
+  /* Radios y transiciones */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --t-fast:   140ms ease-out;
+  --t-med:    220ms ease-out;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--bg); }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  font-size: 16px;
+  /* Sutil fondo radial para dar profundidad sin distraer */
+  background-image:
+    radial-gradient(900px 500px at 10% -10%, rgba(124,58,237,0.08), transparent 60%),
+    radial-gradient(700px 420px at 110% 0%, rgba(0,240,255,0.06), transparent 60%);
+  background-attachment: fixed;
+  min-height: 100dvh;
+}
+
+/* Números siempre con anchura de columna estable (KPIs, lista, montos) */
+.value, .tx-amount, #currentMonthLabel, .summary, .tx-list { font-variant-numeric: tabular-nums; }
+
+/* === Header con barra de gradiente neon ================================= */
+
+header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.25rem 2rem;
+  background: linear-gradient(180deg, rgba(22,27,34,0.92), rgba(22,27,34,0.6));
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+
+/* Barra neon animada en la parte superior del header */
+header::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: var(--grad-neon);
+  background-size: 200% 100%;
+  animation: neon-shift 6s linear infinite;
+  opacity: 0.85;
+}
+
+@keyframes neon-shift {
+  0%   { background-position:   0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: var(--grad-neon);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.month-nav button {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  font-size: 1rem;
+  min-width: 44px;
+  min-height: 44px;
+  transition: border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
+}
+
+.month-nav button:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.month-nav button:active { transform: translateY(1px); }
+
+#currentMonthLabel {
+  min-width: 12ch;
+  text-align: center;
+  text-transform: capitalize;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+
+/* === Layout principal =================================================== */
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.75rem 2rem 4rem;
+  display: grid;
+  gap: 1.5rem;
+}
+
+h2 {
+  margin: 0 0 1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+
+/* === Summary cards (Ingresos / Gastos / Balance) ======================== */
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(31,41,55,0.6), rgba(22,27,34,0.92));
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 1.25rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: transform var(--t-fast), border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  opacity: 0.85;
+}
+
+.card.income::before   { background: linear-gradient(90deg, var(--green), transparent); }
+.card.expense::before  { background: linear-gradient(90deg, var(--magenta), transparent); }
+.card.balance::before  { background: linear-gradient(90deg, var(--cyan), transparent); }
+
+.card:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-pop);
+}
+
+.card .label {
+  color: var(--muted);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+}
+
+.card .value {
+  font-size: 1.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.card.income   .value { color: var(--green);   text-shadow: var(--glow-green); }
+.card.expense  .value { color: var(--magenta); text-shadow: var(--glow-magenta); }
+.card.balance  .value { color: var(--cyan);    text-shadow: var(--glow-cyan); }
+
+
+/* === Gráficos ========================================================== */
+
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.chart-box {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(31,41,55,0.45), rgba(22,27,34,0.92));
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 1.25rem 1.4rem 1rem;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-card);
+}
+
+.chart-box canvas {
+  flex: 1;
+  max-height: 300px;
+}
+
+
+/* === Form section ====================================================== */
+
+.form-section, .tx-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-card);
+}
+
+/* Estado "editando": borde amarillo + halo */
+.form-section.editing {
+  border-color: var(--warning);
+  box-shadow: 0 0 0 1px var(--warning), 0 0 22px rgba(247,223,30,0.18);
+}
+
+form .row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.85rem;
+}
+
+form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+form label.full { width: 100%; }
+
+form input, form select {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  padding: 0.7rem 0.85rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  min-height: 44px;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast), background-color var(--t-fast);
+}
+
+form input::placeholder { color: var(--muted); opacity: 0.6; }
+
+form input:hover, form select:hover { border-color: var(--border-strong); }
+
+form input:focus, form select:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0,240,255,0.18);
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Botón submit: gradiente neon */
+form button[type="submit"] {
+  background: var(--grad-neon);
+  background-size: 200% 100%;
+  background-position: 0% 50%;
+  color: #0B1220;
+  border: none;
+  padding: 0.75rem 1.6rem;
+  border-radius: var(--r-sm);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  font-size: 0.95rem;
+  min-height: 44px;
+  transition: background-position var(--t-med), box-shadow var(--t-fast), transform var(--t-fast);
+  box-shadow: 0 0 0 1px rgba(0,240,255,0.35), 0 6px 18px rgba(124,58,237,0.35);
+}
+
+form button[type="submit"]:hover {
+  background-position: 100% 50%;
+  box-shadow: 0 0 0 1px rgba(255,0,110,0.45), 0 8px 26px rgba(124,58,237,0.55);
+}
+
+form button[type="submit"]:active { transform: translateY(1px); }
+
+#cancelEditBtn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.7rem 1.1rem;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-size: 0.9rem;
+  min-height: 44px;
+  transition: border-color var(--t-fast), color var(--t-fast);
+}
+
+#cancelEditBtn:hover { border-color: var(--warning); color: var(--warning); }
+
+
+/* === TX section ======================================================== */
+
+.tx-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.tx-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tx-actions input[type="search"] {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  padding: 0.55rem 0.8rem;
+  font-size: 0.9rem;
+  min-width: 220px;
+  min-height: 40px;
+  font-family: inherit;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+.tx-actions input[type="search"]:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0,240,255,0.18);
+}
+
+.tx-actions button {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0.55rem 0.95rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  min-height: 40px;
+  transition: border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
+}
+
+.tx-actions button:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+
+/* === Lista de movimientos =============================================== */
+
+.tx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tx-list li {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  transition: border-color var(--t-fast), background-color var(--t-fast), transform var(--t-fast);
+}
+
+.tx-list li:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+}
+
+.tx-list li.editing {
+  border-color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface-2));
+  box-shadow: 0 0 0 1px var(--warning);
+}
+
+/* Pequeño indicador de color a la izquierda según tipo */
+.tx-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12%;
+  bottom: 12%;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--border);
+  transition: background-color var(--t-fast);
+}
+
+.tx-list li:has(.tx-amount.income)::before  { background: var(--green); box-shadow: 0 0 8px rgba(16,185,129,0.5); }
+.tx-list li:has(.tx-amount.expense)::before { background: var(--magenta); box-shadow: 0 0 8px rgba(255,0,110,0.5); }
+
+.tx-list .tx-date {
+  color: var(--muted);
+  font-size: 0.82rem;
+  min-width: 5ch;
+}
+
+.tx-list .tx-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tx-list .tx-category {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.tx-list .tx-description {
+  color: var(--muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tx-list .tx-amount {
+  font-weight: 700;
+  font-size: 1rem;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.tx-list .tx-amount.income  { color: var(--green); }
+.tx-list .tx-amount.expense { color: var(--magenta); }
+
+.tx-list .icon-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--r-sm);
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  min-width: 36px;
+  min-height: 36px;
+  transition: border-color var(--t-fast), color var(--t-fast), background-color var(--t-fast);
+}
+
+.tx-list .icon-btn:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.tx-list .delete-btn { color: var(--magenta); border-color: rgba(255,0,110,0.4); }
+
+.tx-list .delete-btn:hover {
+  background: var(--magenta);
+  color: #0B1220;
+  border-color: var(--magenta);
+  box-shadow: var(--glow-magenta);
+}
+
+
+/* === Estados vacíos ===================================================== */
+
+.empty-hint {
+  color: var(--muted);
+  font-style: italic;
+  text-align: center;
+  padding: 1rem 0;
+  margin: 0;
+  display: none;
+}
+
+.empty-hint.show { display: block; }
+
+
+/* === Toast ============================================================== */
+
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--cyan);
+  border-radius: var(--r-md);
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: var(--shadow-pop), 0 0 0 1px rgba(0,240,255,0.12), 0 0 24px rgba(0,240,255,0.18);
+  z-index: 1000;
+  max-width: 90%;
+  animation: toast-in 220ms ease-out;
+}
+
+.toast[hidden] { display: none; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.toast #toastAction {
+  background: var(--cyan);
+  color: #0B1220;
+  border: none;
+  padding: 0.4rem 0.95rem;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.85rem;
+  min-height: 36px;
+  transition: filter var(--t-fast), box-shadow var(--t-fast);
+}
+
+.toast #toastAction:hover { filter: brightness(1.12); box-shadow: var(--glow-cyan); }
+
+
+/* === Dialog import ===================================================== */
+
+dialog {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 0;
+  max-width: 460px;
+  width: 92%;
+  box-shadow: var(--shadow-pop);
+}
+
+dialog::backdrop {
+  background: rgba(8,12,20,0.65);
+  backdrop-filter: blur(4px);
+}
+
+.dialog-form {
+  padding: 1.5rem;
+  margin: 0;
+}
+
+.dialog-form h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.15rem;
+  background: var(--grad-neon);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dialog-form p {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.dialog-form .dialog-hint {
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.dialog-actions {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.dialog-actions button {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  min-height: 40px;
+  transition: border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
+}
+
+.dialog-actions button:hover { border-color: var(--cyan); color: var(--cyan); }
+
+.dialog-actions button.primary {
+  background: var(--grad-neon);
+  color: #0B1220;
+  border-color: transparent;
+  font-weight: 700;
+  box-shadow: 0 0 0 1px rgba(0,240,255,0.35);
+}
+
+.dialog-actions button.primary:hover { box-shadow: 0 0 0 1px rgba(255,0,110,0.45), var(--glow-cyan); }
+
+.dialog-actions button.danger {
+  border-color: rgba(255,0,110,0.5);
+  color: var(--magenta);
+}
+
+.dialog-actions button.danger:hover {
+  background: var(--magenta);
+  color: #0B1220;
+  border-color: var(--magenta);
+  box-shadow: var(--glow-magenta);
+}
+
+
+/* === Focus visible global ============================================== */
+
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+
+/* === Responsive (mobile) =============================================== */
+
+@media (max-width: 640px) {
+  header { padding: 1rem; }
+  header h1 { font-size: 1.2rem; }
+  main { padding: 1rem 1rem 3rem; gap: 1rem; }
+
+  .card { padding: 1rem 1.1rem; }
+  .card .value { font-size: 1.6rem; }
+
+  .form-section, .tx-section, .chart-box { padding: 1rem 1.1rem; }
+
+  .tx-list li {
+    grid-template-columns: 1fr auto auto;
+    row-gap: 0.4rem;
+    padding: 0.85rem;
+  }
+  .tx-list .tx-date { grid-column: 1 / -1; }
+  .tx-list .tx-info { grid-column: 1 / 2; }
+  .tx-actions input[type="search"] { min-width: 0; flex: 1 1 100%; }
+}
+
+
+/* === Reduced motion ==================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  header::before { animation: none; }
+}

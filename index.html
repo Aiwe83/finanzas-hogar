@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<!--
+  Finanzas del Hogar — entry point.
+  Sitio estático sin build step: HTML + CSS + JS plano.
+  Las dependencias externas (Chart.js, SheetJS) se cargan desde CDN con
+  Subresource Integrity (SRI) y crossorigin para que el navegador rechace
+  cualquier script alterado en el origen. El CSP de netlify.toml restringe
+  los orígenes permitidos: cualquier cambio de CDN aquí debe replicarse allí.
+-->
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finanzas del Hogar</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+          integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"
+          integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <!-- Header con título + navegación de mes (flechas izquierda/derecha) -->
+  <header>
+    <h1>Finanzas del Hogar</h1>
+    <div class="month-nav">
+      <button id="prevMonth" aria-label="Mes anterior">&larr;</button>
+      <span id="currentMonthLabel" aria-live="polite"></span>
+      <button id="nextMonth" aria-label="Mes siguiente">&rarr;</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Resumen del mes: 3 KPIs (ingresos, gastos, balance).
+         aria-live="polite" para que los lectores anuncien las actualizaciones
+         cuando el usuario añade o edita un movimiento. -->
+    <section class="summary" aria-live="polite">
+      <div class="card income">
+        <span class="label">Ingresos</span>
+        <span class="value" id="totalIncome">0,00 €</span>
+      </div>
+      <div class="card expense">
+        <span class="label">Gastos</span>
+        <span class="value" id="totalExpense">0,00 €</span>
+      </div>
+      <div class="card balance">
+        <span class="label">Balance</span>
+        <span class="value" id="totalBalance">0,00 €</span>
+      </div>
+    </section>
+
+    <!-- Gráficos: doughnut (gastos del mes por categoría) + barras (evolución
+         de los últimos 6 meses). Renderizados con Chart.js sobre <canvas>. -->
+    <section class="charts">
+      <div class="chart-box">
+        <h2>Gastos por categoría</h2>
+        <canvas id="categoryChart"></canvas>
+        <p class="empty-hint" id="categoryEmpty">Sin gastos este mes.</p>
+      </div>
+      <div class="chart-box">
+        <h2>Evolución mensual (últimos 6 meses)</h2>
+        <canvas id="evolutionChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Formulario único para crear y editar movimientos. El modo edición se
+         activa desde JS (clase .editing en .form-section + cambio de copy). -->
+    <section class="form-section">
+      <h2 id="formHeading">Nuevo movimiento</h2>
+      <form id="txForm">
+        <div class="row">
+          <label>
+            Tipo
+            <select id="txType" required>
+              <option value="expense">Gasto</option>
+              <option value="income">Ingreso</option>
+            </select>
+          </label>
+          <label>
+            Fecha
+            <input type="date" id="txDate" required>
+          </label>
+          <label>
+            Importe (€)
+            <input type="number" id="txAmount" step="0.01" min="0.01" required>
+          </label>
+          <label>
+            Categoría
+            <select id="txCategory" required></select>
+          </label>
+        </div>
+        <label class="full">
+          Descripción
+          <input type="text" id="txDescription" maxlength="80" placeholder="Opcional">
+        </label>
+        <div class="form-actions">
+          <button type="submit" id="submitBtn">Añadir</button>
+          <button type="button" id="cancelEditBtn" hidden>Cancelar</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Listado del mes visible + acciones de filtro/import/export.
+         El input file está oculto: se dispara via click() desde importBtn. -->
+    <section class="tx-section">
+      <div class="tx-header">
+        <h2>Movimientos del mes</h2>
+        <div class="tx-actions">
+          <input type="search" id="txFilter" placeholder="Filtrar categoría o descripción" aria-label="Filtrar movimientos">
+          <button id="exportBtn" type="button">Exportar Excel</button>
+          <button id="importBtn" type="button">Importar Excel</button>
+          <input type="file" id="importFile" accept=".xlsx,.xls" hidden>
+        </div>
+      </div>
+      <ul id="txList" class="tx-list"></ul>
+      <p class="empty-hint" id="txEmpty">Aún no hay movimientos este mes.</p>
+    </section>
+  </main>
+
+  <!-- Toast global para notificaciones efímeras. Si la acción admite undo,
+       el botón "Deshacer" queda visible durante UNDO_TIMEOUT_MS (ver app.js). -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden>
+    <span id="toastMsg"></span>
+    <button type="button" id="toastAction" hidden>Deshacer</button>
+  </div>
+
+  <!-- Diálogo nativo de confirmación al importar Excel. method="dialog" hace
+       que el submit cierre el modal y deje el value del botón pulsado en
+       returnValue, que JS lee en el evento "close" para decidir la acción. -->
+  <dialog id="importDialog">
+    <form method="dialog" class="dialog-form">
+      <h3>Importar Excel</h3>
+      <p id="importSummary"></p>
+      <p class="dialog-hint">Elegí cómo aplicar los movimientos importados:</p>
+      <menu class="dialog-actions">
+        <button value="cancel">Cancelar</button>
+        <button value="append" class="primary">Añadir a los existentes</button>
+        <button value="replace" class="danger">Reemplazar todo</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
