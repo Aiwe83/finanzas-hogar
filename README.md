@@ -3,7 +3,7 @@
 Dashboard web para llevar el control de ingresos y gastos mensuales del hogar. Todo se guarda en el propio navegador (`localStorage`); no hay backend, ni cuentas, ni cookies, ni rastreo.
 
 **En producción:** <https://gorgeous-cocada-43a7e4.netlify.app>
-**Código fuente:** <https://github.com/Aiwe83/projects/tree/main/finanzas-hogar>
+**Código fuente:** <https://github.com/Aiwe83/finanzas-hogar>
 
 ---
 
